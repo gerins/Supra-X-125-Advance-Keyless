@@ -4,10 +4,12 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <DS3231.h>
+#include <Adafruit_BMP280.h>
 #include "Costum_Fonts.h"
 #include "Costum_Images.h"
 
 Adafruit_SSD1306 display(128, 64, &Wire, -1);
+Adafruit_BMP280 bmp;
 DS3231 rtc;
 
 const uint8_t buttonPin = 14;		//D5
@@ -41,6 +43,8 @@ void settingI2cDevices()
 	display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
 	display.setTextColor(WHITE);
 	display.clearDisplay();
+
+	bmp.begin(0x76);
 }
 
 void settingPinAndState()
@@ -189,13 +193,10 @@ void switchAndDisplayOledScreen(bool relayCondition, int refreshDuration, uint8_
 		switch (counterOled)
 		{
 		case 1:
-			displayTimeAndDate();
+			displayTimeAndDate(bmp.readTemperature());
 			break;
 		case 2:
-			display.clearDisplay();
-			display.setCursor(32, 16);
-			display.print("case 2");
-			display.display();
+			displayAltitude(bmp.readAltitude(1013.25));
 			break;
 		default:
 			counterOled = 1;
@@ -204,7 +205,7 @@ void switchAndDisplayOledScreen(bool relayCondition, int refreshDuration, uint8_
 	}
 }
 
-void displayTimeAndDate()
+void displayTimeAndDate(float getTemperature)
 {
 	bool h12 = false;
 	bool PM = false;
@@ -252,7 +253,7 @@ void displayTimeAndDate()
 	display.setCursor(93, 62 + tinggiDisplay);
 	display.setFont();
 	display.setTextSize(1);
-	display.print("33.4");
+	display.print(getTemperature, 1);
 	display.print("C");
 
 	display.setCursor(7, 56 + tinggiDisplay);
@@ -324,4 +325,29 @@ String stringOfMonth(byte getMonth)
 	default:
 		break;
 	}
+}
+
+void displayAltitude(float getAltitude)
+{
+	display.clearDisplay();
+	display.drawBitmap(0, 19, MountainBitmap2, 50, 50, WHITE);
+
+	display.setFont(&Cousine_Bold_11);
+	display.setCursor(50, 17);
+	display.print("Altitude");
+
+	display.setCursor(85, 55);
+	display.print("MDPL");
+
+	display.setFont(&DSEG7_Classic_Bold_21);
+	display.setCursor(47, 44);
+	if (getAltitude < 1000)
+		display.print('0');
+	if (getAltitude < 100)
+		display.print('0');
+	if (getAltitude < 10)
+		display.print('0');
+	display.print(getAltitude, 0);
+
+	display.display();
 }
