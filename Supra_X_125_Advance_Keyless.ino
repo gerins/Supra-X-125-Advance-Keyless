@@ -31,7 +31,7 @@ void setup()
 void loop()
 {
 	pressToStartTimer(buttonPin);
-	remoteKeyless(primaryRelay, 500);
+	remoteKeyless(primaryRelay, 400);
 	autoTurnOffRelay(&stateRelay, 5000, 8, getBatteryVoltage());
 	switchAndDisplayOledScreen(stateRelay, 100, 20);
 	printToSerial(200);
@@ -204,6 +204,9 @@ void switchAndDisplayOledScreen(bool relayCondition, int refreshDuration, uint8_
 		case 4:
 			displayEngineTemperature(180);
 			break;
+		case 5:
+			displayTachometer(7500);
+			break;
 		default:
 			counterOled = 1;
 			break;
@@ -232,15 +235,21 @@ void displayTimeAndDate(float getTemperature)
 	display.setFont(&DSEG7_Classic_Bold_21);
 
 	display.setCursor(6, 43 + tinggiDisplay);
-	addZeroDigits(nowHour);
+	if (nowHour < 10)
+		display.print('0');
+	display.print(nowHour);
 	display.print(':');
 
 	display.setCursor(47, 43 + tinggiDisplay);
-	addZeroDigits(rtc.getMinute());
+	if (rtc.getMinute() < 10)
+		display.print('0');
+	display.print(rtc.getMinute());
 	display.print(':');
 
 	display.setCursor(88, 43 + tinggiDisplay);
-	addZeroDigits(rtc.getSecond());
+	if (rtc.getSecond() < 10)
+		display.print('0');
+	display.print(rtc.getSecond());
 
 	display.drawLine(3, 50 + tinggiDisplay, 125, 50 + tinggiDisplay, WHITE);
 
@@ -266,15 +275,6 @@ void displayTimeAndDate(float getTemperature)
 	display.print(DayOfWeek(rtc.getDoW()));
 
 	display.display();
-}
-
-void addZeroDigits(byte digits)
-{
-	if (digits < 10)
-	{
-		display.print('0');
-	}
-	display.print(digits);
 }
 
 String DayOfWeek(byte dayOfWeek)
@@ -408,6 +408,43 @@ void displayEngineTemperature(uint8_t getEngineTemp)
 	display.setTextSize(2);
 	display.print('C');
 	display.setTextSize(1);
+
+	display.display();
+}
+
+void displayTachometer(uint16_t getTachometer)
+{
+	display.clearDisplay();
+
+	int tachometerLevel = map(getTachometer, 0, 8000, 64, 35);
+	if (tachometerLevel < 35)
+	{
+		tachometerLevel = 35;
+	}
+	display.fillRect(119, tachometerLevel, 9, 64, WHITE);
+	display.fillRect(0, tachometerLevel, 9, 64, WHITE);
+
+	display.setFont(&Cousine_Bold_11);
+	display.setCursor(26, 14);
+	display.print("Tachometer");
+
+	display.setFont(&DSEG7_Classic_Bold_26);
+	display.setCursor(21, 48);
+
+	if (getTachometer < 1000)
+		display.print('0');
+	if (getTachometer < 100)
+		display.print('0');
+	if (getTachometer < 10)
+		display.print('0');
+	display.print(getTachometer);
+
+	display.setFont(&Cousine_Bold_11);
+	display.setCursor(54, 60);
+	display.print("RPM");
+
+	display.drawLine(0, 35, 17, 35, WHITE);
+	display.drawLine(112, 35, 128, 35, WHITE);
 
 	display.display();
 }

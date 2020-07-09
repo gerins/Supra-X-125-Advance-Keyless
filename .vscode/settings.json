@@ -9,7 +9,8 @@
     "initializer_list": "cpp",
     "istream": "cpp",
     "ostream": "cpp",
-    "*.tcc": "cpp"
+    "*.tcc": "cpp",
+    "limits": "cpp"
   },
   "editor.tabSize": 3,
   "C_Cpp.errorSquiggles": "Disabled"
