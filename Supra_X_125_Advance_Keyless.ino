@@ -254,14 +254,13 @@ void displayTimeAndDate(float getTemperature)
 	display.drawLine(3, 50 + tinggiDisplay, 125, 50 + tinggiDisplay, WHITE);
 
 	display.setFont(&Meteocons_Regular_11);
+	display.setCursor(80, 64 + tinggiDisplay);
 	if (nowHour > 18 || nowHour < 6)
 	{
-		display.setCursor(80, 64 + tinggiDisplay);
 		display.print('C');
 	}
 	else
 	{
-		display.setCursor(80, 64 + tinggiDisplay);
 		display.print('B');
 	}
 
