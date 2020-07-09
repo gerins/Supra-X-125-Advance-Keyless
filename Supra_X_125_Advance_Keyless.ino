@@ -198,6 +198,9 @@ void switchAndDisplayOledScreen(bool relayCondition, int refreshDuration, uint8_
 		case 2:
 			displayAltitude(bmp.readAltitude(1013.25));
 			break;
+		case 3:
+			displayBatteryVoltage(getBatteryVoltage());
+			break;
 		default:
 			counterOled = 1;
 			break;
@@ -348,6 +351,29 @@ void displayAltitude(float getAltitude)
 	if (getAltitude < 10)
 		display.print('0');
 	display.print(getAltitude, 0);
+
+	display.display();
+}
+
+void displayBatteryVoltage(float getVoltage)
+{
+	display.clearDisplay();
+	display.drawBitmap(8, 18, BatteryBitmap, 40, 40, WHITE);
+
+	display.setFont(&Cousine_Bold_11);
+	display.setCursor(58, 20);
+	display.print("Battery");
+
+	display.setFont(&DSEG7_Classic_Bold_26);
+	display.setCursor(44, 54);
+	if (getVoltage < 10)
+	{
+		display.setCursor(56, 54);
+	}
+	display.print(getVoltage, 1);
+
+	display.setFont(&Cousine_Bold_11);
+	display.print("V");
 
 	display.display();
 }
