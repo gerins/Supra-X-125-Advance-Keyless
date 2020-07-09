@@ -201,6 +201,9 @@ void switchAndDisplayOledScreen(bool relayCondition, int refreshDuration, uint8_
 		case 3:
 			displayBatteryVoltage(getBatteryVoltage());
 			break;
+		case 4:
+			displayEngineTemperature(180);
+			break;
 		default:
 			counterOled = 1;
 			break;
@@ -374,6 +377,37 @@ void displayBatteryVoltage(float getVoltage)
 
 	display.setFont(&Cousine_Bold_11);
 	display.print("V");
+
+	display.display();
+}
+
+void displayEngineTemperature(uint8_t getEngineTemp)
+{
+	display.setTextSize(1);
+	display.clearDisplay();
+	display.drawBitmap(8, 17, EngineTempBitmap, 40, 40, WHITE);
+
+	display.setFont(&Cousine_Bold_11);
+	display.setCursor(55, 20);
+	display.print("Engine");
+
+	display.setFont(&DSEG7_Classic_Bold_26);
+	display.setCursor(53, 54);
+	if (getEngineTemp > 100)
+	{
+		display.setCursor(41, 54);
+	}
+	display.print(getEngineTemp);
+
+	display.setCursor(99, 46);
+	if (getEngineTemp > 100)
+	{
+		display.setCursor(109, 46);
+	}
+	display.setFont();
+	display.setTextSize(2);
+	display.print('C');
+	display.setTextSize(1);
 
 	display.display();
 }
