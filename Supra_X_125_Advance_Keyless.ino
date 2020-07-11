@@ -4,7 +4,7 @@
 #include <Adafruit_BMP280.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
-// #include <ESPAsyncWebServer.h> // later
+// #include <ESPAsyncWebServer.h>
 #include <DS3231.h>
 #include "Costum_Fonts.h"
 #include "Costum_Images.h"
@@ -13,6 +13,7 @@
 DS3231 rtc;
 Adafruit_BMP280 bmp;
 ESP8266WebServer server;
+WiFiEventHandler disconnectedEventHandler;
 Adafruit_SSD1306 display(128, 64, &Wire, -1);
 
 char *wifiSSID = "Redmiqwery1";
@@ -25,14 +26,18 @@ const uint8_t primaryRelay = 13; //D7
 uint8_t counterOled;
 bool stateRelay = true;
 bool checkingSwitchButton, checkingSwitchOled, lastSwitchButton;
-unsigned long timeStart, millisPrintToSerial, millisDeepSleep, millisAutoTurnOff, millisOled;
+unsigned long timeStart, millisPrintToSerial, millisDeepSleep, millisAutoTurnOff, millisOled, millisCheckWiFi;
 
 void setup()
 {
 	Serial.begin(9600);
-	connectWifiAndStartServer();
-	settingPinAndState();
+	startWiFiAndServer();
 	settingI2cDevices();
+	settingPinAndState();
+
+	disconnectedEventHandler = WiFi.onStationModeDisconnected([](const WiFiEventStationModeDisconnected &event) {
+		Serial.println("Station disconnected");
+	});
 }
 
 void loop()
@@ -41,28 +46,14 @@ void loop()
 	pressToStartTimer(buttonPin);
 	remoteKeyless(primaryRelay, 400);
 	autoTurnOffRelay(&stateRelay, 10000, 8, getBatteryVoltage());
-	switchAndDisplayOledScreen(stateRelay, 100, 35);
+	switchAndDisplayOledScreen(stateRelay, 100, 50);
 	printToSerial(1000);
 	// deepSleepMode(stateRelay, 5000);
 }
 
-void connectWifiAndStartServer()
+void startWiFiAndServer()
 {
 	WiFi.begin(wifiSSID, wifiPassword);
-	while (WiFi.status() != WL_CONNECTED)
-	{
-		Serial.println(".");
-		delay(500);
-		counterOled++;
-		if (counterOled == 15)
-		{
-			break;
-		}
-	}
-
-	Serial.print("");
-	Serial.print("IP Address:  ");
-	Serial.println(WiFi.localIP());
 
 	server.on("/", []() { server.send_P(200, "text/html", homePage); });
 	server.on("/relaystate", handleRelayState);
@@ -237,6 +228,9 @@ void switchAndDisplayOledScreen(bool relayCondition, int refreshDuration, uint8_
 			break;
 		case 5:
 			displayTachometer(millis() / 500);
+			break;
+		case 6:
+			displayWifiConnectifity();
 			break;
 		default:
 			counterOled = 1;
@@ -475,6 +469,33 @@ void displayTachometer(uint16_t getTachometer)
 
 	display.drawLine(0, 35, 17, 35, WHITE);
 	display.drawLine(112, 35, 128, 35, WHITE);
+
+	display.display();
+}
+
+void displayWifiConnectifity()
+{
+	display.clearDisplay();
+	display.drawBitmap(1, 9, wifiBitmap, 40, 40, WHITE);
+
+	display.setFont(&Cousine_Bold_11);
+	display.setCursor(6, 57);
+	display.print("WiFi");
+	display.setCursor(58, 20);
+	display.print("Status");
+
+	display.setCursor(42, 38);
+	display.setFont();
+	display.setTextSize(1);
+	if (WiFi.status() == WL_CONNECTED)
+	{
+		display.print(WiFi.localIP());
+	}
+	else
+	{
+		display.setCursor(48, 36);
+		display.print("Reconnecting");
+	}
 
 	display.display();
 }
