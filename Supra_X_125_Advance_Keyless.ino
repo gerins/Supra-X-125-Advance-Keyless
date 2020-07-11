@@ -1,16 +1,22 @@
 #include <Arduino.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include <Adafruit_BMP280.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
+// #include <ESPAsyncWebServer.h> // later
 #include <DS3231.h>
-#include <Adafruit_BMP280.h>
 #include "Costum_Fonts.h"
 #include "Costum_Images.h"
+#include "Web_Page.h"
 
-Adafruit_SSD1306 display(128, 64, &Wire, -1);
-Adafruit_BMP280 bmp;
 DS3231 rtc;
+Adafruit_BMP280 bmp;
+ESP8266WebServer server;
+Adafruit_SSD1306 display(128, 64, &Wire, -1);
+
+char *wifiSSID = "Redmiqwery1";
+char *wifiPassword = "kucing123";
 
 const uint8_t buttonPin = 14;		//D5
 const uint8_t buzzer = 12;			//D6
@@ -24,18 +30,43 @@ unsigned long timeStart, millisPrintToSerial, millisDeepSleep, millisAutoTurnOff
 void setup()
 {
 	Serial.begin(9600);
+	connectWifiAndStartServer();
 	settingPinAndState();
 	settingI2cDevices();
 }
 
 void loop()
 {
+	server.handleClient();
 	pressToStartTimer(buttonPin);
 	remoteKeyless(primaryRelay, 400);
-	autoTurnOffRelay(&stateRelay, 5000, 8, getBatteryVoltage());
-	switchAndDisplayOledScreen(stateRelay, 100, 20);
-	printToSerial(200);
+	autoTurnOffRelay(&stateRelay, 10000, 8, getBatteryVoltage());
+	switchAndDisplayOledScreen(stateRelay, 100, 35);
+	printToSerial(1000);
 	// deepSleepMode(stateRelay, 5000);
+}
+
+void connectWifiAndStartServer()
+{
+	WiFi.begin(wifiSSID, wifiPassword);
+	while (WiFi.status() != WL_CONNECTED)
+	{
+		Serial.println(".");
+		delay(500);
+		counterOled++;
+		if (counterOled == 15)
+		{
+			break;
+		}
+	}
+
+	Serial.print("");
+	Serial.print("IP Address:  ");
+	Serial.println(WiFi.localIP());
+
+	server.on("/", []() { server.send_P(200, "text/html", homePage); });
+	server.on("/relaystate", handleRelayState);
+	server.begin();
 }
 
 void settingI2cDevices()
@@ -115,9 +146,9 @@ void turnOnBuzzer(byte times, int duration)
 {
 	for (int i = 1; i <= times; i++)
 	{
-		digitalWrite(buzzer, LOW);
+		digitalWrite(buzzer, false);
 		delay(duration);
-		digitalWrite(buzzer, HIGH);
+		digitalWrite(buzzer, true);
 		delay(duration);
 	}
 }
@@ -205,7 +236,7 @@ void switchAndDisplayOledScreen(bool relayCondition, int refreshDuration, uint8_
 			displayEngineTemperature(180);
 			break;
 		case 5:
-			displayTachometer(7500);
+			displayTachometer(millis() / 500);
 			break;
 		default:
 			counterOled = 1;
@@ -446,4 +477,12 @@ void displayTachometer(uint16_t getTachometer)
 	display.drawLine(112, 35, 128, 35, WHITE);
 
 	display.display();
+}
+
+void handleRelayState()
+{
+	stateRelay = !stateRelay;
+	digitalWrite(primaryRelay, stateRelay);
+	String relayCondition = digitalRead(stateRelay) ? "ON" : "OFF";
+	server.send(200, "text/plain", relayCondition);
 }
