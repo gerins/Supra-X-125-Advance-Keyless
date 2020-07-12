@@ -25,8 +25,8 @@ const uint8_t primaryRelay = 13; //D7
 
 uint8_t counterOled;
 bool stateRelay = true;
-bool checkingSwitchButton, checkingSwitchOled, lastSwitchButton;
-unsigned long timeStart, millisPrintToSerial, millisDeepSleep, millisAutoTurnOff, millisOled, millisCheckWiFi;
+bool checkingSwitchButton, lastSwitchButton, checkingSwitchOled;
+unsigned long timeStart, millisPrintToSerial, millisDeepSleep, millisAutoTurnOff, millisOled;
 
 void setup()
 {
@@ -36,8 +36,10 @@ void setup()
 	settingPinAndState();
 
 	disconnectedEventHandler = WiFi.onStationModeDisconnected([](const WiFiEventStationModeDisconnected &event) {
-		Serial.println("Station disconnected");
+		Serial.println("Station disconnected, trying to reconnect");
 	});
+
+	delay(100); // for stabilization
 }
 
 void loop()
@@ -493,7 +495,7 @@ void displayWifiConnectifity()
 	}
 	else
 	{
-		display.setCursor(48, 36);
+		display.setCursor(48, 34);
 		display.print("Reconnecting");
 	}
 
