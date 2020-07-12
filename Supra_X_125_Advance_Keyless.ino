@@ -2,17 +2,19 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <Adafruit_BMP280.h>
-#include <ESP8266WiFi.h>
-#include <ESP8266WebServer.h>
-// #include <ESPAsyncWebServer.h>
 #include <DS3231.h>
+// #include <Hash.h>
+#include <ESP8266WiFi.h>
+#include <ESPAsyncTCP.h>
+#include <ESPAsyncWebServer.h>
+#include <FS.h>
 #include "Costum_Fonts.h"
 #include "Costum_Images.h"
 #include "Web_Page.h"
 
 DS3231 rtc;
 Adafruit_BMP280 bmp;
-ESP8266WebServer server;
+AsyncWebServer server(80);
 WiFiEventHandler disconnectedEventHandler;
 Adafruit_SSD1306 display(128, 64, &Wire, -1);
 
@@ -39,12 +41,11 @@ void setup()
 		Serial.println("Station disconnected, trying to reconnect");
 	});
 
-	delay(100); // for stabilization
+	delay(200); // for stabilization
 }
 
 void loop()
 {
-	server.handleClient();
 	pressToStartTimer(buttonPin);
 	remoteKeyless(primaryRelay, 400);
 	autoTurnOffRelay(&stateRelay, 10000, 8, getBatteryVoltage());
@@ -57,8 +58,35 @@ void startWiFiAndServer()
 {
 	WiFi.begin(wifiSSID, wifiPassword);
 
-	server.on("/", []() { server.send_P(200, "text/html", homePage); });
-	server.on("/relaystate", handleRelayState);
+	if (!SPIFFS.begin())
+	{
+		Serial.println("An Error has occurred while mounting SPIFFS");
+	}
+
+	File file = SPIFFS.open("/index.html", "r");
+	if (!file)
+	{
+		Serial.println("Failed to open file for reading");
+	}
+
+	file.close();
+
+	server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+		request->send(SPIFFS, "/index.html");
+	});
+
+	server.on("/temperature", HTTP_GET, [](AsyncWebServerRequest *request) {
+		request->send_P(200, "text/plain", String(bmp.readTemperature()).c_str());
+	});
+
+	server.on("/humidity", HTTP_GET, [](AsyncWebServerRequest *request) {
+		request->send_P(200, "text/plain", String(bmp.readTemperature()).c_str());
+	});
+
+	server.on("/pressure", HTTP_GET, [](AsyncWebServerRequest *request) {
+		request->send_P(200, "text/plain", String(bmp.readTemperature()).c_str());
+	});
+
 	server.begin();
 }
 
@@ -303,7 +331,7 @@ void displayTimeAndDate(float getTemperature)
 	display.display();
 }
 
-String DayOfWeek(byte dayOfWeek)
+String DayOfWeek(uint8_t dayOfWeek)
 {
 	switch (dayOfWeek)
 	{
@@ -326,7 +354,7 @@ String DayOfWeek(byte dayOfWeek)
 	}
 }
 
-String stringOfMonth(byte getMonth)
+String stringOfMonth(uint8_t getMonth)
 {
 	switch (getMonth)
 	{
@@ -507,5 +535,5 @@ void handleRelayState()
 	stateRelay = !stateRelay;
 	digitalWrite(primaryRelay, stateRelay);
 	String relayCondition = digitalRead(stateRelay) ? "ON" : "OFF";
-	server.send(200, "text/plain", relayCondition);
+	// server.send(200, "text/plain", relayCondition);
 }

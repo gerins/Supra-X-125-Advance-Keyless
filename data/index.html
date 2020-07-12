@@ -66,7 +66,7 @@ copies or substantial portions of the Software. -->
       };
       xhttp.open("GET", "/temperature", true);
       xhttp.send();
-    }, 30000);
+    }, 1000);
 
     var chartH = new Highcharts.Chart({
       chart: { renderTo: "chart-humidity" },
@@ -105,7 +105,7 @@ copies or substantial portions of the Software. -->
       };
       xhttp.open("GET", "/humidity", true);
       xhttp.send();
-    }, 30000);
+    }, 1000);
 
     var chartP = new Highcharts.Chart({
       chart: { renderTo: "chart-pressure" },
@@ -145,6 +145,6 @@ copies or substantial portions of the Software. -->
       };
       xhttp.open("GET", "/pressure", true);
       xhttp.send();
-    }, 30000);
+    }, 1000);
   </script>
 </html>
