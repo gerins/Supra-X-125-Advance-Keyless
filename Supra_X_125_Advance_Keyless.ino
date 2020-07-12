@@ -4,6 +4,7 @@
 #include <Adafruit_BMP280.h>
 #include <DS3231.h>
 // #include <Hash.h>
+// #include <ESP8266WebServer.h>
 #include <ESP8266WiFi.h>
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
@@ -33,15 +34,15 @@ unsigned long timeStart, millisPrintToSerial, millisDeepSleep, millisAutoTurnOff
 void setup()
 {
 	Serial.begin(9600);
-	startWiFiAndServer();
 	settingI2cDevices();
 	settingPinAndState();
+	startWiFiAndServer();
 
 	disconnectedEventHandler = WiFi.onStationModeDisconnected([](const WiFiEventStationModeDisconnected &event) {
 		Serial.println("Station disconnected, trying to reconnect");
 	});
 
-	delay(200); // for stabilization
+	server.begin();
 }
 
 void loop()
@@ -49,7 +50,7 @@ void loop()
 	pressToStartTimer(buttonPin);
 	remoteKeyless(primaryRelay, 400);
 	autoTurnOffRelay(&stateRelay, 10000, 8, getBatteryVoltage());
-	switchAndDisplayOledScreen(stateRelay, 100, 50);
+	switchAndDisplayOledScreen(stateRelay, 200, 50);
 	printToSerial(1000);
 	// deepSleepMode(stateRelay, 5000);
 }
@@ -80,23 +81,22 @@ void startWiFiAndServer()
 	});
 
 	server.on("/humidity", HTTP_GET, [](AsyncWebServerRequest *request) {
-		request->send_P(200, "text/plain", String(bmp.readTemperature()).c_str());
+		request->send_P(200, "text/plain", String(bmp.readAltitude(1013.25)).c_str());
 	});
 
 	server.on("/pressure", HTTP_GET, [](AsyncWebServerRequest *request) {
-		request->send_P(200, "text/plain", String(bmp.readTemperature()).c_str());
+		request->send_P(200, "text/plain", String(getBatteryVoltage()).c_str());
 	});
-
-	server.begin();
 }
 
 void settingI2cDevices()
 {
+	bmp.begin(0x76);
+
 	display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
 	display.setTextColor(WHITE);
 	display.clearDisplay();
-
-	bmp.begin(0x76);
+	display.display();
 }
 
 void settingPinAndState()
@@ -163,20 +163,9 @@ void pressToStartTimer(byte inputButton)
 	}
 }
 
-void turnOnBuzzer(byte times, int duration)
+void deepSleepMode(bool relayCondition, int durBeforeSleep)
 {
-	for (int i = 1; i <= times; i++)
-	{
-		digitalWrite(buzzer, false);
-		delay(duration);
-		digitalWrite(buzzer, true);
-		delay(duration);
-	}
-}
-
-void deepSleepMode(bool stateRelay, int durBeforeSleep)
-{
-	if (stateRelay == true)
+	if (relayCondition == true)
 	{
 		if (millis() - millisDeepSleep >= durBeforeSleep)
 		{
@@ -184,19 +173,6 @@ void deepSleepMode(bool stateRelay, int durBeforeSleep)
 			ESP.deepSleep(0); // deep sleep permanen
 		}
 	}
-}
-
-float getBatteryVoltage()
-{
-	float vOUT, vIN;
-	uint16_t analogValue;
-	float R1 = 30000;
-	float R2 = 7500;
-
-	// @ts-ignore
-	analogValue = analogRead(A0);
-	vOUT = (analogValue * 3.3) / 1024;
-	return vIN = vOUT / (R2 / (R1 + R2));
 }
 
 void autoTurnOffRelay(bool *relayCondition, int durBeforeTurnOff, byte voltThreshold, float batteryVoltage)
@@ -220,6 +196,30 @@ void autoTurnOffRelay(bool *relayCondition, int durBeforeTurnOff, byte voltThres
 		digitalWrite(primaryRelay, *relayCondition);
 		return;
 	}
+}
+
+void turnOnBuzzer(byte times, int duration)
+{
+	for (int i = 1; i <= times; i++)
+	{
+		digitalWrite(buzzer, false);
+		delay(duration);
+		digitalWrite(buzzer, true);
+		delay(duration);
+	}
+}
+
+float getBatteryVoltage()
+{
+	float vOUT, vIN;
+	uint16_t analogValue;
+	float R1 = 30000;
+	float R2 = 7500;
+
+	// @ts-ignore
+	analogValue = analogRead(A0);
+	vOUT = (analogValue * 3.3) / 1024;
+	return vIN = vOUT / (R2 / (R1 + R2));
 }
 
 void switchAndDisplayOledScreen(bool relayCondition, int refreshDuration, uint8_t pressDuration)
