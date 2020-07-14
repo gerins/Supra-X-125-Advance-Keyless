@@ -36,13 +36,7 @@ void setup()
 	Serial.begin(9600);
 	settingI2cDevices();
 	settingPinAndState();
-	startWiFiAndServer();
-
-	disconnectedEventHandler = WiFi.onStationModeDisconnected([](const WiFiEventStationModeDisconnected &event) {
-		Serial.println("Station disconnected, trying to reconnect");
-	});
-
-	server.begin();
+	// startWiFiAndServer();
 }
 
 void loop()
@@ -58,6 +52,10 @@ void loop()
 void startWiFiAndServer()
 {
 	WiFi.begin(wifiSSID, wifiPassword);
+
+	disconnectedEventHandler = WiFi.onStationModeDisconnected([](const WiFiEventStationModeDisconnected &event) {
+		Serial.println("Station disconnected, trying to reconnect");
+	});
 
 	if (!SPIFFS.begin())
 	{
@@ -87,6 +85,8 @@ void startWiFiAndServer()
 	server.on("/pressure", HTTP_GET, [](AsyncWebServerRequest *request) {
 		request->send_P(200, "text/plain", String(getBatteryVoltage()).c_str());
 	});
+
+	server.begin();
 }
 
 void settingI2cDevices()
