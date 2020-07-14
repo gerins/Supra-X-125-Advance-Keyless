@@ -3,37 +3,34 @@
 #include <Adafruit_SSD1306.h>
 #include <Adafruit_BMP280.h>
 #include <DS3231.h>
-// #include <Hash.h>
-// #include <ESP8266WebServer.h>
-#include <ESP8266WiFi.h>
-#include <ESPAsyncTCP.h>
-#include <ESPAsyncWebServer.h>
-#include <FS.h>
+#include <max6675.h>
 #include "Costum_Fonts.h"
 #include "Costum_Images.h"
-#include "Web_Page.h"
 
 DS3231 rtc;
 Adafruit_BMP280 bmp;
+#define SCK_PIN 14									  // Pin D5 SCK=Serial CLock (Kalo di arduino Pin 13)
+#define SO_PIN 12										  // Pin D6 SO=Slave Out (Kalo di arduino Pin 12)
+#define CS_PIN 15										  // Pin D8 CS=Chip Select (Kalo di arduino Pin 10)
+MAX6675 thermocouple(SCK_PIN, CS_PIN, SO_PIN); // library baru dicoba di esp8266
+
 Adafruit_SSD1306 display(128, 64, &Wire, -1);
 
 const uint8_t buttonPin = 14;		//D5
 const uint8_t buzzer = 12;			//D6
 const uint8_t primaryRelay = 13; //D7
 
-unsigned long millisPrintToSerial, millisOled;
+unsigned long millisOled;
 
 void setup()
 {
-	// Serial.begin(9600);
 	settingI2cDevices();
 	settingPinAndState();
 }
 
 void loop()
 {
-	displayTimeAndDate(bmp.readAltitude(1013.25), 200);
-	// printToSerial(1000);
+	displayTimeAndDate(300); // OLED merefresh layar setiap 0.3 detik sekali
 }
 
 void settingI2cDevices()
@@ -56,22 +53,7 @@ void settingPinAndState()
 	pinMode(primaryRelay, OUTPUT);
 }
 
-void printToSerial(int duration)
-{
-	if (millis() - millisPrintToSerial >= duration)
-	{
-		millisPrintToSerial = millis();
-		Serial.print(" batteryVoltage   : ");
-		Serial.print(getBatteryVoltage());
-		Serial.print("   millis() - timeStart   : ");
-		Serial.print(millis() - timeStart);
-		Serial.print("   counterOled   : ");
-		Serial.print(counterOled);
-		Serial.println("");
-	}
-}
-
-void displayTimeAndDate(float getAltitude, int refreshInterval)
+void displayTimeAndDate(int refreshInterval)
 {
 	if (millis() - millisOled >= refreshInterval)
 	{
@@ -85,7 +67,7 @@ void displayTimeAndDate(float getAltitude, int refreshInterval)
 		display.clearDisplay();
 
 		display.setFont(&Cousine_Bold_11);
-		display.setCursor(32, 16 + tinggiDisplay);
+		display.setCursor(3, 16 + tinggiDisplay); // atur posisi kalender
 
 		display.print(rtc.getDate());
 		display.print('-');
@@ -112,29 +94,30 @@ void displayTimeAndDate(float getAltitude, int refreshInterval)
 			display.print('0');
 		display.print(rtc.getSecond());
 
-		display.drawLine(3, 50 + tinggiDisplay, 125, 50 + tinggiDisplay, WHITE);
+		display.drawLine(3, 50 + tinggiDisplay, 125, 50 + tinggiDisplay, WHITE); // print garis bawah
 
-		display.setFont(&Meteocons_Regular_11);
-		display.setCursor(80, 64 + tinggiDisplay);
-		if (nowHour > 18 || nowHour < 6)
+		if (bmp.readAltitude(1013.25) < 100)
 		{
-			display.print('C');
+			display.setCursor(85, 62 + tinggiDisplay); // setting posisi tampilan MDPL
 		}
 		else
 		{
-			display.print('B');
+			display.setCursor(73, 62 + tinggiDisplay); // setting posisi tampilan MDPL
 		}
 
-		display.setCursor(93, 62 + tinggiDisplay);
 		display.setFont();
 		display.setTextSize(1);
-		display.print(getAltitude, 0);
-		display.print("C");
+		display.print(bmp.readAltitude(1013.25), 0); // baca ketinggian
+		display.print(" MDPL");								// print tulisan MDPL
 
-		display.setCursor(7, 56 + tinggiDisplay);
-		display.print(DayOfWeek(rtc.getDoW()));
+		display.setCursor(89, 9 + tinggiDisplay); // setting posisi hari
+		display.print(DayOfWeek(rtc.getDoW()));	// baca hari
 
-		display.display();
+		display.setCursor(7, 56 + tinggiDisplay);	 // setting posisi suhu mesin
+		display.print(thermocouple.readCelsius()); // tampilkan suhu mesin ke OLED
+		display.print("C");								 // print huruf C
+
+		display.display(); // tampilkan ke OLED
 	}
 }
 
