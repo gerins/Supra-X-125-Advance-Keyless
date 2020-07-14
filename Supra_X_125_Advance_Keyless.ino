@@ -12,13 +12,12 @@ Adafruit_BMP280 bmp;
 #define SCK_PIN 14									  // Pin D5 SCK=Serial CLock (Kalo di arduino Pin 13)
 #define SO_PIN 12										  // Pin D6 SO=Slave Out (Kalo di arduino Pin 12)
 #define CS_PIN 15										  // Pin D8 CS=Chip Select (Kalo di arduino Pin 10)
-MAX6675 thermocouple(SCK_PIN, CS_PIN, SO_PIN); // library baru dicoba di esp8266
-
+MAX6675 thermocouple(SCK_PIN, CS_PIN, SO_PIN); // library baru dicoba di esp8266, gatau bisa atau engga kalau di arduino
 Adafruit_SSD1306 display(128, 64, &Wire, -1);
 
-const uint8_t buttonPin = 14;		//D5
-const uint8_t buzzer = 12;			//D6
-const uint8_t primaryRelay = 13; //D7
+const uint8_t redLed = 8;	  //SD1
+const uint8_t yellowLed = 9; //SD2
+const uint8_t greenLed = 10; //SD3
 
 unsigned long millisOled;
 
@@ -45,18 +44,20 @@ void settingI2cDevices()
 
 void settingPinAndState()
 {
-	digitalWrite(primaryRelay, HIGH);
-	digitalWrite(buzzer, HIGH);
+	pinMode(redLed, OUTPUT);
+	pinMode(yellowLed, OUTPUT);
+	pinMode(greenLed, OUTPUT);
 
-	pinMode(buttonPin, INPUT_PULLUP);
-	pinMode(buzzer, OUTPUT);
-	pinMode(primaryRelay, OUTPUT);
+	digitalWrite(redLed, LOW);
+	digitalWrite(yellowLed, LOW);
+	digitalWrite(greenLed, LOW);
 }
 
 void displayTimeAndDate(int refreshInterval)
 {
 	if (millis() - millisOled >= refreshInterval)
 	{
+		engineTempLedIndicator(thermocouple.readCelsius());
 		millisOled = millis();
 
 		bool h12 = false;
@@ -174,5 +175,27 @@ String stringOfMonth(uint8_t getMonth)
 		return "DEC";
 	default:
 		break;
+	}
+}
+
+void engineTempLedIndicator(int getEngineTemp)
+{
+	if (getEngineTemp >= 70 && getEngineTemp <= 80)
+	{
+		digitalWrite(yellowLed, HIGH);
+		digitalWrite(redLed, LOW);
+		digitalWrite(greenLed, LOW);
+	}
+	else if (getEngineTemp > 80)
+	{
+		digitalWrite(redLed, HIGH);
+		digitalWrite(yellowLed, LOW);
+		digitalWrite(greenLed, LOW);
+	}
+	else if (getEngineTemp < 70)
+	{
+		digitalWrite(greenLed, HIGH);
+		digitalWrite(redLed, LOW);
+		digitalWrite(yellowLed, LOW);
 	}
 }
