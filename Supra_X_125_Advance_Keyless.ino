@@ -3,6 +3,7 @@
 #include <Adafruit_SSD1306.h>
 #include <Adafruit_BMP280.h>
 #include <DS3231.h>
+#include <max6675.h>
 // #include <ESP8266WebServer.h>
 // #include <Hash.h>
 // #include <ESP8266WiFi.h>
@@ -13,11 +14,16 @@
 #include "Costum_Images.h"
 #include "Web_Page.h"
 
+#define SCK_PIN 14 // Pin D5 SCK=Serial CLock (Kalo di arduino Pin 13)
+#define SO_PIN 12	 // Pin D6 SO=Slave Out (Kalo di arduino Pin 12)
+#define CS_PIN 15	 // Pin D8 CS=Chip Select (Kalo di arduino Pin 10)
+
 DS3231 rtc;
 Adafruit_BMP280 bmp;
 AsyncWebServer server(80);
 WiFiEventHandler disconnectedEventHandler;
 Adafruit_SSD1306 display(128, 64, &Wire, -1);
+MAX6675 thermocouple(SCK_PIN, CS_PIN, SO_PIN); // library baru dicoba di esp8266, gatau bisa atau engga kalau di arduino
 
 char *wifiSSID = "Redmiqwery1";
 char *wifiPassword = "kucing123";
@@ -254,7 +260,7 @@ void switchAndDisplayOledScreen(bool relayCondition, int refreshDuration, uint8_
 			displayBatteryVoltage(getBatteryVoltage());
 			break;
 		case 4:
-			displayEngineTemperature(180);
+			displayEngineTemperature(thermocouple.readCelsius());
 			break;
 		case 5:
 			displayTachometer(millis() / 500);
@@ -435,10 +441,10 @@ void displayBatteryVoltage(float getVoltage)
 	display.display();
 }
 
-void displayEngineTemperature(uint8_t getEngineTemp)
+void displayEngineTemperature(float getEngineTemp)
 {
-	display.setTextSize(1);
 	display.clearDisplay();
+	display.setTextSize(1);
 	display.drawBitmap(8, 17, EngineTempBitmap, 40, 40, WHITE);
 
 	display.setFont(&Cousine_Bold_11);
@@ -451,7 +457,7 @@ void displayEngineTemperature(uint8_t getEngineTemp)
 	{
 		display.setCursor(41, 54);
 	}
-	display.print(getEngineTemp);
+	display.print(getEngineTemp, 0);
 
 	display.setCursor(99, 46);
 	if (getEngineTemp > 100)
@@ -461,7 +467,7 @@ void displayEngineTemperature(uint8_t getEngineTemp)
 	display.setFont();
 	display.setTextSize(2);
 	display.print('C');
-	display.setTextSize(1);
+	// display.setTextSize(1);
 
 	display.display();
 }
