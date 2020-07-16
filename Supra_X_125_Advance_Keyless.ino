@@ -15,9 +15,9 @@ Adafruit_BMP280 bmp;
 MAX6675 thermocouple(SCK_PIN, CS_PIN, SO_PIN); // library baru dicoba di esp8266, gatau bisa atau engga kalau di arduino
 Adafruit_SSD1306 display(128, 64, &Wire, -1);
 
-const uint8_t redLed = 8;	  //SD1
-const uint8_t yellowLed = 9; //SD2
-const uint8_t greenLed = 10; //SD3
+const uint8_t redLed = 0;	  //D3
+const uint8_t yellowLed = 2; //D4
+const uint8_t greenLed = 13; //D7
 
 unsigned long millisOled;
 
