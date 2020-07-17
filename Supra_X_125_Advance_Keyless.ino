@@ -5,11 +5,11 @@
 #include <DS3231.h>
 #include <max6675.h>
 // #include <ESP8266WebServer.h>
-// #include <Hash.h>
-// #include <ESP8266WiFi.h>
-// #include <ESPAsyncTCP.h>
-// #include <ESPAsyncWebServer.h>
-// #include <FS.h>
+#include <Hash.h>
+#include <ESP8266WiFi.h>
+#include <ESPAsyncTCP.h>
+#include <ESPAsyncWebServer.h>
+#include <FS.h>
 #include "Costum_Fonts.h"
 #include "Costum_Images.h"
 #include "Web_Page.h"
@@ -23,14 +23,14 @@ Adafruit_BMP280 bmp;
 AsyncWebServer server(80);
 WiFiEventHandler disconnectedEventHandler;
 Adafruit_SSD1306 display(128, 64, &Wire, -1);
-MAX6675 thermocouple(SCK_PIN, CS_PIN, SO_PIN); // library baru dicoba di esp8266, gatau bisa atau engga kalau di arduino
+MAX6675 thermocouple(SCK_PIN, CS_PIN, SO_PIN);
 
 char *wifiSSID = "Redmiqwery1";
 char *wifiPassword = "kucing123";
 
-const uint8_t buttonPin = 14;		//D5
-const uint8_t buzzer = 12;			//D6
-const uint8_t primaryRelay = 13; //D7
+const uint8_t buttonPin = 13;	  //D7
+const uint8_t buzzer = 0;		  //D3
+const uint8_t primaryRelay = 3; //RX
 
 uint8_t counterOled;
 bool stateRelay = true;
@@ -263,11 +263,11 @@ void switchAndDisplayOledScreen(bool relayCondition, int refreshDuration, uint8_
 			displayEngineTemperature(thermocouple.readCelsius());
 			break;
 		case 5:
-			displayTachometer(millis() / 500);
+			displayTachometer(7500);
 			break;
-		case 6:
-			displayWifiConnectifity();
-			break;
+		// case 6:
+		// 	displayWifiConnectifity();
+		// 	break;
 		default:
 			counterOled = 1;
 			break;
@@ -467,7 +467,6 @@ void displayEngineTemperature(float getEngineTemp)
 	display.setFont();
 	display.setTextSize(2);
 	display.print('C');
-	// display.setTextSize(1);
 
 	display.display();
 }
@@ -475,6 +474,7 @@ void displayEngineTemperature(float getEngineTemp)
 void displayTachometer(uint16_t getTachometer)
 {
 	display.clearDisplay();
+	display.setTextSize(1);
 
 	int tachometerLevel = map(getTachometer, 0, 8000, 64, 35);
 	if (tachometerLevel < 35)
@@ -534,12 +534,4 @@ void displayWifiConnectifity()
 	}
 
 	display.display();
-}
-
-void handleRelayState()
-{
-	stateRelay = !stateRelay;
-	digitalWrite(primaryRelay, stateRelay);
-	String relayCondition = digitalRead(stateRelay) ? "ON" : "OFF";
-	// server.send(200, "text/plain", relayCondition);
 }
