@@ -24,7 +24,7 @@ const uint8_t primaryRelay = 9;
 uint8_t counterOled;
 bool stateRelay = true;
 bool checkingSwitchButton, lastSwitchButton, checkingSwitchOled;
-unsigned long timeStart, millisDeepSleep, millisAutoTurnOff, millisOled;
+unsigned long timeStart, millisAutoTurnOff, millisOled;
 
 void setup()
 {
@@ -37,7 +37,7 @@ void loop()
 	pressToStartTimer(buttonPin);
 	remoteKeyless(primaryRelay, 350);
 	autoTurnOffRelay(&stateRelay, 10000, 8, getBatteryVoltage());
-	switchAndDisplayOledScreen(stateRelay, 200, 70);
+	displayTimeAndDate(300);
 }
 
 void settingI2cDevices()
@@ -146,113 +146,72 @@ float getBatteryVoltage()
 	return vIN = vOUT / (R2 / (R1 + R2));
 }
 
-void switchAndDisplayOledScreen(bool relayCondition, int refreshDuration, uint8_t pressDuration)
+void displayTimeAndDate(int refreshInterval)
 {
-	if (relayCondition == true)
+	if (millis() - millisOled >= refreshInterval)
 	{
-		Wire.endTransmission();
-		display.clearDisplay();
-		display.display();
-		return;
-	}
-
-	if ((millis() - timeStart) >= pressDuration && checkingSwitchOled)
-	{
-		counterOled++;
-		checkingSwitchOled = false;
-	}
-
-	if (millis() - millisOled >= refreshDuration)
-	{
-		Wire.endTransmission(false);
 		millisOled = millis();
-		switch (counterOled)
+
+		bool h12 = false;
+		bool PM = false;
+		bool Century = false;
+		byte nowHour = rtc.getHour(h12, PM);
+		int8_t tinggiDisplay = -3;
+		display.clearDisplay();
+
+		display.setFont(&Cousine_Bold_11);
+		display.setCursor(3, 16 + tinggiDisplay); // atur posisi kalender
+
+		display.print(rtc.getDate());
+		display.print('-');
+		display.print(stringOfMonth(rtc.getMonth(Century)));
+		display.print('-');
+		display.print(rtc.getYear());
+
+		display.setFont(&DSEG7_Classic_Bold_21);
+
+		display.setCursor(6, 43 + tinggiDisplay);
+		if (nowHour < 10)
+			display.print('0');
+		display.print(nowHour);
+		display.print(':');
+
+		display.setCursor(47, 43 + tinggiDisplay);
+		if (rtc.getMinute() < 10)
+			display.print('0');
+		display.print(rtc.getMinute());
+		display.print(':');
+
+		display.setCursor(88, 43 + tinggiDisplay);
+		if (rtc.getSecond() < 10)
+			display.print('0');
+		display.print(rtc.getSecond());
+
+		display.drawLine(3, 50 + tinggiDisplay, 125, 50 + tinggiDisplay, WHITE);
+
+		if (bmp.readAltitude(1013.25) < 100)
 		{
-		case 1:
-			displayTimeAndDate(bmp.readTemperature());
-			break;
-		case 2:
-			displayAltitude(bmp.readAltitude(1013.25));
-			break;
-		case 3:
-			displayBatteryVoltage(getBatteryVoltage());
-			break;
-		case 4:
-			displayEngineTemperature(thermocouple.readCelsius());
-			break;
-		case 5:
-			displayTachometer(7500);
-			break;
-		// case 6:
-		// 	displayWifiConnectifity();
-		// 	break;
-		default:
-			counterOled = 1;
-			break;
+			display.setCursor(85, 62 + tinggiDisplay); // setting posisi tampilan MDPL
 		}
+		else
+		{
+			display.setCursor(73, 62 + tinggiDisplay); // setting posisi tampilan MDPL
+		}
+
+		display.setFont();
+		display.setTextSize(1);
+		display.print(bmp.readAltitude(1013.25), 0); // baca ketinggian
+		display.print(" MDPL");								// print tulisan MDPL
+
+		display.setCursor(89, 9 + tinggiDisplay); // setting posisi hari
+		display.print(DayOfWeek(rtc.getDoW()));	// baca hari
+
+		display.setCursor(7, 56 + tinggiDisplay);	 // setting posisi suhu mesin
+		display.print(thermocouple.readCelsius()); // tampilkan suhu mesin ke OLED
+		display.print("C");								 // print huruf C
+
+		display.display(); // tampilkan ke OLED
 	}
-}
-
-void displayTimeAndDate(float getTemperature)
-{
-	bool h12 = false;
-	bool PM = false;
-	bool Century = false;
-	byte nowHour = rtc.getHour(h12, PM);
-	int8_t tinggiDisplay = -3;
-	display.clearDisplay();
-
-	display.setFont(&Cousine_Bold_11);
-	display.setCursor(32, 16 + tinggiDisplay);
-
-	display.print(rtc.getDate());
-	display.print('-');
-	display.print(stringOfMonth(rtc.getMonth(Century)));
-	display.print('-');
-	display.print(rtc.getYear());
-
-	display.setFont(&DSEG7_Classic_Bold_21);
-
-	display.setCursor(6, 43 + tinggiDisplay);
-	if (nowHour < 10)
-		display.print('0');
-	display.print(nowHour);
-	display.print(':');
-
-	display.setCursor(47, 43 + tinggiDisplay);
-	if (rtc.getMinute() < 10)
-		display.print('0');
-	display.print(rtc.getMinute());
-	display.print(':');
-
-	display.setCursor(88, 43 + tinggiDisplay);
-	if (rtc.getSecond() < 10)
-		display.print('0');
-	display.print(rtc.getSecond());
-
-	display.drawLine(3, 50 + tinggiDisplay, 125, 50 + tinggiDisplay, WHITE);
-
-	display.setFont(&Meteocons_Regular_11);
-	display.setCursor(80, 64 + tinggiDisplay);
-	if (nowHour > 18 || nowHour < 6)
-	{
-		display.print('C');
-	}
-	else
-	{
-		display.print('B');
-	}
-
-	display.setCursor(93, 62 + tinggiDisplay);
-	display.setFont();
-	display.setTextSize(1);
-	display.print(getTemperature, 1);
-	display.print("C");
-
-	display.setCursor(7, 56 + tinggiDisplay);
-	display.print(DayOfWeek(rtc.getDoW()));
-
-	display.display();
 }
 
 String DayOfWeek(uint8_t dayOfWeek)
@@ -309,120 +268,4 @@ String stringOfMonth(uint8_t getMonth)
 	default:
 		break;
 	}
-}
-
-void displayAltitude(float getAltitude)
-{
-	display.clearDisplay();
-	display.drawBitmap(0, 19, MountainBitmap2, 50, 50, WHITE);
-
-	display.setFont(&Cousine_Bold_11);
-	display.setCursor(50, 17);
-	display.print("Altitude");
-
-	display.setCursor(85, 55);
-	display.print("MDPL");
-
-	display.setFont(&DSEG7_Classic_Bold_21);
-	display.setCursor(47, 44);
-	if (getAltitude < 1000)
-		display.print('0');
-	if (getAltitude < 100)
-		display.print('0');
-	if (getAltitude < 10)
-		display.print('0');
-	display.print(getAltitude, 0);
-
-	display.display();
-}
-
-void displayBatteryVoltage(float getVoltage)
-{
-	display.clearDisplay();
-	display.drawBitmap(8, 18, BatteryBitmap, 40, 40, WHITE);
-
-	display.setFont(&Cousine_Bold_11);
-	display.setCursor(58, 20);
-	display.print("Battery");
-
-	display.setFont(&DSEG7_Classic_Bold_26);
-	display.setCursor(44, 54);
-	if (getVoltage < 10)
-	{
-		display.setCursor(56, 54);
-	}
-	display.print(getVoltage, 1);
-
-	display.setFont(&Cousine_Bold_11);
-	display.print("V");
-
-	display.display();
-}
-
-void displayEngineTemperature(float getEngineTemp)
-{
-	display.clearDisplay();
-	display.setTextSize(1);
-	display.drawBitmap(8, 17, EngineTempBitmap, 40, 40, WHITE);
-
-	display.setFont(&Cousine_Bold_11);
-	display.setCursor(55, 20);
-	display.print("Engine");
-
-	display.setFont(&DSEG7_Classic_Bold_26);
-	display.setCursor(53, 54);
-	if (getEngineTemp > 100)
-	{
-		display.setCursor(41, 54);
-	}
-	display.print(getEngineTemp, 0);
-
-	display.setCursor(99, 46);
-	if (getEngineTemp > 100)
-	{
-		display.setCursor(109, 46);
-	}
-	display.setFont();
-	display.setTextSize(2);
-	display.print('C');
-	display.setTextSize(1);
-
-	display.display();
-}
-
-void displayTachometer(uint16_t getTachometer)
-{
-	display.clearDisplay();
-
-	int tachometerLevel = map(getTachometer, 0, 8000, 64, 35);
-	if (tachometerLevel < 35)
-	{
-		tachometerLevel = 35;
-	}
-	display.fillRect(119, tachometerLevel, 9, 64, WHITE);
-	display.fillRect(0, tachometerLevel, 9, 64, WHITE);
-
-	display.setFont(&Cousine_Bold_11);
-	display.setCursor(26, 14);
-	display.print("Tachometer");
-
-	display.setFont(&DSEG7_Classic_Bold_26);
-	display.setCursor(21, 48);
-
-	if (getTachometer < 1000)
-		display.print('0');
-	if (getTachometer < 100)
-		display.print('0');
-	if (getTachometer < 10)
-		display.print('0');
-	display.print(getTachometer);
-
-	display.setFont(&Cousine_Bold_11);
-	display.setCursor(54, 60);
-	display.print("RPM");
-
-	display.drawLine(0, 35, 17, 35, WHITE);
-	display.drawLine(112, 35, 128, 35, WHITE);
-
-	display.display();
 }
