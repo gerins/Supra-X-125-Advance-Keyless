@@ -4,9 +4,7 @@
 #include <Adafruit_BMP280.h>
 #include <DS3231.h>
 #include <max6675.h>
-
 #include "Costum_Fonts.h"
-#include "Costum_Images.h"
 
 #define SCK_PIN 13 // Pin 14 / D5 SCK=Serial CLock (Kalo di arduino Pin 13)
 #define SO_PIN 12	 // Pin 12 / D6 SO=Slave Out (Kalo di arduino Pin 12)
@@ -20,8 +18,8 @@ MAX6675 thermocouple(SCK_PIN, CS_PIN, SO_PIN);
 const uint8_t buttonPin = 2;
 const uint8_t buzzer = 8;
 const uint8_t primaryRelay = 9;
+const uint8_t resetPin = 6;
 
-uint8_t counterOled;
 bool stateRelay = true;
 bool checkingSwitchButton, lastSwitchButton, checkingSwitchOled;
 unsigned long timeStart, millisAutoTurnOff, millisOled;
@@ -37,7 +35,7 @@ void loop()
 	pressToStartTimer(buttonPin);
 	remoteKeyless(primaryRelay, 350);
 	autoTurnOffRelay(&stateRelay, 10000, 8, getBatteryVoltage());
-	displayTimeAndDate(300);
+	displayTimeAndDate(stateRelay, 300);
 }
 
 void settingI2cDevices()
@@ -54,10 +52,12 @@ void settingPinAndState()
 {
 	digitalWrite(primaryRelay, HIGH);
 	digitalWrite(buzzer, HIGH);
+	digitalWrite(resetPin, HIGH);
 
 	pinMode(buttonPin, INPUT_PULLUP);
 	pinMode(buzzer, OUTPUT);
 	pinMode(primaryRelay, OUTPUT);
+	pinMode(resetPin, OUTPUT);
 }
 
 void remoteKeyless(byte inputRelay, int pressDuration)
@@ -68,6 +68,7 @@ void remoteKeyless(byte inputRelay, int pressDuration)
 		{
 			stateRelay = HIGH; // Mematikan RELAY
 			turnOnBuzzer(1, 200);
+			digitalWrite(resetPin, LOW);
 		}
 		else
 		{
@@ -118,6 +119,7 @@ void autoTurnOffRelay(bool *relayCondition, int durBeforeTurnOff, byte voltThres
 		*relayCondition = true;
 		turnOnBuzzer(1, 200);
 		digitalWrite(primaryRelay, *relayCondition);
+		digitalWrite(resetPin, LOW);
 		return;
 	}
 }
@@ -146,8 +148,14 @@ float getBatteryVoltage()
 	return vIN = vOUT / (R2 / (R1 + R2));
 }
 
-void displayTimeAndDate(int refreshInterval)
+void displayTimeAndDate(bool relayCondition, int refreshInterval)
 {
+	if (relayCondition == true)
+	{
+		display.clearDisplay();
+		display.display();
+		return;
+	}
 	if (millis() - millisOled >= refreshInterval)
 	{
 		millisOled = millis();
