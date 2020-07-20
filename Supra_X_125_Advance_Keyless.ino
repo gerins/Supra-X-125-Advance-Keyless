@@ -28,9 +28,9 @@ MAX6675 thermocouple(SCK_PIN, CS_PIN, SO_PIN);
 char *wifiSSID = "Redmiqwery1";
 char *wifiPassword = "kucing123";
 
-const uint8_t buttonPin = 13;	  //D7
-const uint8_t buzzer = 0;		  //D3
-const uint8_t primaryRelay = 3; //RX
+const uint8_t buttonPin = 16;		//D0
+const uint8_t buzzer = 3;			//RX
+const uint8_t primaryRelay = 13; //D7
 
 uint8_t counterOled;
 bool stateRelay = true;
@@ -39,7 +39,7 @@ unsigned long timeStart, millisPrintToSerial, millisDeepSleep, millisAutoTurnOff
 
 void setup()
 {
-	Serial.begin(9600);
+	// Serial.begin(9600);
 	settingI2cDevices();
 	settingPinAndState();
 	// startWiFiAndServer();
@@ -48,10 +48,10 @@ void setup()
 void loop()
 {
 	pressToStartTimer(buttonPin);
-	remoteKeyless(primaryRelay, 400);
+	remoteKeyless(primaryRelay, 350);
 	autoTurnOffRelay(&stateRelay, 10000, 8, getBatteryVoltage());
-	switchAndDisplayOledScreen(stateRelay, 200, 50);
-	printToSerial(1000);
+	switchAndDisplayOledScreen(stateRelay, 200, 70);
+	// printToSerial(30);
 	// deepSleepMode(stateRelay, 5000);
 }
 
@@ -467,6 +467,7 @@ void displayEngineTemperature(float getEngineTemp)
 	display.setFont();
 	display.setTextSize(2);
 	display.print('C');
+	display.setTextSize(1);
 
 	display.display();
 }
@@ -474,7 +475,6 @@ void displayEngineTemperature(float getEngineTemp)
 void displayTachometer(uint16_t getTachometer)
 {
 	display.clearDisplay();
-	display.setTextSize(1);
 
 	int tachometerLevel = map(getTachometer, 0, 8000, 64, 35);
 	if (tachometerLevel < 35)
