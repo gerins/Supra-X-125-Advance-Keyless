@@ -8,35 +8,28 @@
 #include "Costum_Fonts.h"
 #include "Costum_Images.h"
 
-#define SCK_PIN 14 // Pin D5 SCK=Serial CLock (Kalo di arduino Pin 13)
-#define SO_PIN 12	 // Pin D6 SO=Slave Out (Kalo di arduino Pin 12)
-#define CS_PIN 15	 // Pin D8 CS=Chip Select (Kalo di arduino Pin 10)
+#define SCK_PIN 13 // Pin 14 / D5 SCK=Serial CLock (Kalo di arduino Pin 13)
+#define SO_PIN 12	 // Pin 12 / D6 SO=Slave Out (Kalo di arduino Pin 12)
+#define CS_PIN 10	 // Pin 15 / D8 CS=Chip Select (Kalo di arduino Pin 10)
 
 DS3231 rtc;
 Adafruit_BMP280 bmp;
-AsyncWebServer server(80);
-WiFiEventHandler disconnectedEventHandler;
 Adafruit_SSD1306 display(128, 64, &Wire, -1);
 MAX6675 thermocouple(SCK_PIN, CS_PIN, SO_PIN);
 
-char *wifiSSID = "Redmiqwery1";
-char *wifiPassword = "kucing123";
-
-const uint8_t buttonPin = 16;		//D0
-const uint8_t buzzer = 3;			//RX
-const uint8_t primaryRelay = 13; //D7
+const uint8_t buttonPin = 2;
+const uint8_t buzzer = 8;
+const uint8_t primaryRelay = 9;
 
 uint8_t counterOled;
 bool stateRelay = true;
 bool checkingSwitchButton, lastSwitchButton, checkingSwitchOled;
-unsigned long timeStart, millisPrintToSerial, millisDeepSleep, millisAutoTurnOff, millisOled;
+unsigned long timeStart, millisDeepSleep, millisAutoTurnOff, millisOled;
 
 void setup()
 {
-	// Serial.begin(9600);
 	settingI2cDevices();
 	settingPinAndState();
-	// startWiFiAndServer();
 }
 
 void loop()
@@ -45,48 +38,6 @@ void loop()
 	remoteKeyless(primaryRelay, 350);
 	autoTurnOffRelay(&stateRelay, 10000, 8, getBatteryVoltage());
 	switchAndDisplayOledScreen(stateRelay, 200, 70);
-	// printToSerial(30);
-	// deepSleepMode(stateRelay, 5000);
-}
-
-void startWiFiAndServer()
-{
-	WiFi.begin(wifiSSID, wifiPassword);
-
-	disconnectedEventHandler = WiFi.onStationModeDisconnected([](const WiFiEventStationModeDisconnected &event) {
-		Serial.println("Station disconnected, trying to reconnect");
-	});
-
-	if (!SPIFFS.begin())
-	{
-		Serial.println("An Error has occurred while mounting SPIFFS");
-	}
-
-	File file = SPIFFS.open("/index.html", "r");
-	if (!file)
-	{
-		Serial.println("Failed to open file for reading");
-	}
-
-	file.close();
-
-	server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
-		request->send(SPIFFS, "/index.html");
-	});
-
-	server.on("/temperature", HTTP_GET, [](AsyncWebServerRequest *request) {
-		request->send_P(200, "text/plain", String(bmp.readTemperature()).c_str());
-	});
-
-	server.on("/humidity", HTTP_GET, [](AsyncWebServerRequest *request) {
-		request->send_P(200, "text/plain", String(bmp.readAltitude(1013.25)).c_str());
-	});
-
-	server.on("/pressure", HTTP_GET, [](AsyncWebServerRequest *request) {
-		request->send_P(200, "text/plain", String(getBatteryVoltage()).c_str());
-	});
-
-	server.begin();
 }
 
 void settingI2cDevices()
@@ -107,21 +58,6 @@ void settingPinAndState()
 	pinMode(buttonPin, INPUT_PULLUP);
 	pinMode(buzzer, OUTPUT);
 	pinMode(primaryRelay, OUTPUT);
-}
-
-void printToSerial(int duration)
-{
-	if (millis() - millisPrintToSerial >= duration)
-	{
-		millisPrintToSerial = millis();
-		Serial.print(" batteryVoltage   : ");
-		Serial.print(getBatteryVoltage());
-		Serial.print("   millis() - timeStart   : ");
-		Serial.print(millis() - timeStart);
-		Serial.print("   counterOled   : ");
-		Serial.print(counterOled);
-		Serial.println("");
-	}
 }
 
 void remoteKeyless(byte inputRelay, int pressDuration)
@@ -160,18 +96,6 @@ void pressToStartTimer(byte inputButton)
 			checkingSwitchOled = false;
 		}
 		lastSwitchButton = currentSwitchButton;
-	}
-}
-
-void deepSleepMode(bool relayCondition, int durBeforeSleep)
-{
-	if (relayCondition == true)
-	{
-		if (millis() - millisDeepSleep >= durBeforeSleep)
-		{
-			millisDeepSleep = millis();
-			ESP.deepSleep(0); // deep sleep permanen
-		}
 	}
 }
 
@@ -499,33 +423,6 @@ void displayTachometer(uint16_t getTachometer)
 
 	display.drawLine(0, 35, 17, 35, WHITE);
 	display.drawLine(112, 35, 128, 35, WHITE);
-
-	display.display();
-}
-
-void displayWifiConnectifity()
-{
-	display.clearDisplay();
-	display.drawBitmap(1, 9, wifiBitmap, 40, 40, WHITE);
-
-	display.setFont(&Cousine_Bold_11);
-	display.setCursor(6, 57);
-	display.print("WiFi");
-	display.setCursor(58, 20);
-	display.print("Status");
-
-	display.setCursor(42, 38);
-	display.setFont();
-	display.setTextSize(1);
-	if (WiFi.status() == WL_CONNECTED)
-	{
-		display.print(WiFi.localIP());
-	}
-	else
-	{
-		display.setCursor(48, 34);
-		display.print("Reconnecting");
-	}
 
 	display.display();
 }
