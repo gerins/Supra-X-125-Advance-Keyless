@@ -35,7 +35,7 @@ void loop()
 {
 	pressToStartTimer(buttonPin);
 	remoteKeyless(primaryRelay, 350);
-	autoTurnOffRelay(&stateRelay, 10000, 8, getBatteryVoltage());
+	autoTurnOffRelay(&stateRelay, 10000, 7, getBatteryVoltage());
 	deepSleepMode(stateRelay, 1000);
 	displayTimeAndDate(stateRelay, 300);
 }
@@ -164,10 +164,11 @@ float getBatteryVoltage()
 	uint16_t analogValue;
 	float R1 = 30000;
 	float R2 = 7500;
+	uint8_t analogMaxVoltage = 5; // Arduino Nano
 
 	// @ts-ignore
 	analogValue = analogRead(A0);
-	vOUT = (analogValue * 3.3) / 1024;
+	vOUT = (analogValue * analogMaxVoltage) / 1024;
 	return vIN = vOUT / (R2 / (R1 + R2));
 }
 
