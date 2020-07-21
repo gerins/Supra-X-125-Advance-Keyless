@@ -21,7 +21,7 @@ const uint8_t primaryRelay = 9;
 const uint8_t resetPin = 6;
 
 bool stateRelay = true;
-bool checkingSwitchButton, lastSwitchButton, checkingSwitchOled;
+bool checkingSwitchButton, lastSwitchButton;
 unsigned long timeStart, millisAutoTurnOff, millisOled;
 
 void setup()
@@ -50,9 +50,9 @@ void settingI2cDevices()
 
 void settingPinAndState()
 {
+	digitalWrite(resetPin, HIGH);
 	digitalWrite(primaryRelay, HIGH);
 	digitalWrite(buzzer, HIGH);
-	digitalWrite(resetPin, HIGH);
 
 	pinMode(buttonPin, INPUT_PULLUP);
 	pinMode(buzzer, OUTPUT);
