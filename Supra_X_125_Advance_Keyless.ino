@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <avr/sleep.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <Adafruit_BMP280.h>
@@ -22,7 +23,7 @@ const uint8_t resetPin = 6;
 
 bool stateRelay = true;
 bool checkingSwitchButton, lastSwitchButton;
-unsigned long timeStart, millisAutoTurnOff, millisOled;
+unsigned long timeStart, millisAutoTurnOff, millisOled, millisDeepSleep;
 
 void setup()
 {
@@ -35,6 +36,7 @@ void loop()
 	pressToStartTimer(buttonPin);
 	remoteKeyless(primaryRelay, 350);
 	autoTurnOffRelay(&stateRelay, 10000, 8, getBatteryVoltage());
+	deepSleepMode(stateRelay, 1000);
 	displayTimeAndDate(stateRelay, 300);
 }
 
@@ -89,12 +91,10 @@ void pressToStartTimer(byte inputButton)
 		{
 			timeStart = millis();
 			checkingSwitchButton = true;
-			checkingSwitchOled = true;
 		}
 		else
 		{
 			checkingSwitchButton = false;
-			checkingSwitchOled = false;
 		}
 		lastSwitchButton = currentSwitchButton;
 	}
@@ -122,6 +122,29 @@ void autoTurnOffRelay(bool *relayCondition, int durBeforeTurnOff, byte voltThres
 		digitalWrite(resetPin, LOW);
 		return;
 	}
+}
+
+void deepSleepMode(bool relayCondition, int durBeforeSleep)
+{
+	if (relayCondition == false)
+	{
+		millisDeepSleep = millis();
+		return;
+	}
+
+	if (millis() - millisDeepSleep >= durBeforeSleep)
+	{
+		attachInterrupt(0, wakeUp, FALLING);
+		set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+		sleep_enable();
+		sleep_cpu();
+		detachInterrupt(0);
+	}
+}
+
+void wakeUp()
+{
+	millisDeepSleep = millis();
 }
 
 void turnOnBuzzer(byte times, int duration)
@@ -195,7 +218,7 @@ void displayTimeAndDate(bool relayCondition, int refreshInterval)
 			display.print('0');
 		display.print(rtc.getSecond());
 
-		display.drawLine(3, 50 + tinggiDisplay, 125, 50 + tinggiDisplay, WHITE);
+		display.drawLine(3, 48 + tinggiDisplay, 125, 48 + tinggiDisplay, WHITE);
 
 		if (bmp.readAltitude(1013.25) < 100)
 		{
