@@ -102,13 +102,7 @@ void pressToStartTimer(byte inputButton)
 
 void autoTurnOffRelay(bool *relayCondition, int durBeforeTurnOff, byte voltThreshold, float batteryVoltage)
 {
-	if (*relayCondition == true)
-	{
-		millisAutoTurnOff = millis();
-		return;
-	}
-
-	if (batteryVoltage >= voltThreshold)
+	if (*relayCondition == true || batteryVoltage >= voltThreshold)
 	{
 		millisAutoTurnOff = millis();
 		return;
