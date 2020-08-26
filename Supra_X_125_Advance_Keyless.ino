@@ -4,14 +4,16 @@
 #include <Adafruit_BMP280.h>
 #include <DS3231.h>
 #include <max6675.h>
-// #include <ESP8266WebServer.h>
-#include <Hash.h>
-#include <ESP8266WiFi.h>
-#include <ESPAsyncTCP.h>
-#include <ESPAsyncWebServer.h>
-#include <FS.h>
 #include "Costum_Fonts.h"
 #include "Costum_Images.h"
+
+// WebServer Library
+#include <ESP8266WiFi.h>
+#include <ESPAsyncTCP.h>
+#include <ESP8266WebServer.h>
+#include <ESPAsyncWebServer.h>
+#include <Hash.h>
+#include <FS.h>
 #include "Web_Page.h"
 
 #define SCK_PIN 14 // Pin D5 SCK=Serial CLock (Kalo di arduino Pin 13)
