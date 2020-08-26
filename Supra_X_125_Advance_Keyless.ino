@@ -4,11 +4,14 @@
 #include <Adafruit_BMP280.h>
 #include <DS3231.h>
 #include <max6675.h>
+#include <Ticker.h>
 #include "Costum_Fonts.h"
 #include "Costum_Images.h"
 
 DS3231 rtc;
 Adafruit_BMP280 bmp;
+Ticker secondTicker; // creating object secondTicker for WDT
+volatile uint8_t watchDogCounter;
 #define SCK_PIN 14									  // Pin D5 SCK=Serial CLock (Kalo di arduino Pin 13)
 #define SO_PIN 12										  // Pin D6 SO=Slave Out (Kalo di arduino Pin 12)
 #define CS_PIN 15										  // Pin D8 CS=Chip Select (Kalo di arduino Pin 10)
@@ -23,13 +26,24 @@ unsigned long millisOled;
 
 void setup()
 {
+	secondTicker.attach_ms(100, ISRWatchDog); // Ketika terjadi hang, ISRWatchDog() akan berjalan setiap 0.1 detik (100ms)
 	settingI2cDevices();
 	settingPinAndState();
 }
 
 void loop()
 {
+	watchDogCounter = 0;		 // Mereset watchDogCounter menjadi 0
 	displayTimeAndDate(300); // OLED merefresh layar setiap 0.3 detik sekali
+}
+
+void ISRWatchDog()
+{
+	watchDogCounter++;		  // Ketika terjadi hang, akan terus menambah watchDogCounter
+	if (watchDogCounter == 5) // Jika watchDogCounter sudah mencapai 5
+	{
+		ESP.reset(); // Akan melakukan reset
+	}
 }
 
 void settingI2cDevices()
