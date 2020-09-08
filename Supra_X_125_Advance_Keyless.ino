@@ -17,8 +17,8 @@
 #include "Web_Page.h"
 
 #define SCK_PIN 14 // Pin D5 SCK=Serial CLock (Kalo di arduino Pin 13)
-#define SO_PIN 12	 // Pin D6 SO=Slave Out (Kalo di arduino Pin 12)
-#define CS_PIN 15	 // Pin D8 CS=Chip Select (Kalo di arduino Pin 10)
+#define SO_PIN 12  // Pin D6 SO=Slave Out (Kalo di arduino Pin 12)
+#define CS_PIN 15  // Pin D8 CS=Chip Select (Kalo di arduino Pin 10)
 
 DS3231 rtc;
 Adafruit_BMP280 bmp;
@@ -30,8 +30,8 @@ MAX6675 thermocouple(SCK_PIN, CS_PIN, SO_PIN);
 char *wifiSSID = "Redmiqwery1";
 char *wifiPassword = "kucing123";
 
-const uint8_t buttonPin = 16;		//D0
-const uint8_t buzzer = 3;			//RX
+const uint8_t buttonPin = 16;	 //D0
+const uint8_t buzzer = 3;		 //RX
 const uint8_t primaryRelay = 13; //D7
 
 uint8_t counterOled;
