@@ -21,7 +21,7 @@ const uint8_t buzzer = 8;
 const uint8_t primaryRelay = 9;
 const uint8_t resetPin = 6;
 
-bool stateRelay = true;
+bool stateRelay = true; // true is off, false is on
 bool checkingSwitchButton, lastSwitchButton;
 unsigned long timeStart, millisAutoTurnOff, millisOled, millisDeepSleep;
 
