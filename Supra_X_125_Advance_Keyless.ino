@@ -8,8 +8,8 @@
 #include "Costum_Fonts.h"
 
 #define SCK_PIN 13 // Pin 14 / D5 SCK=Serial CLock (Kalo di arduino Pin 13)
-#define SO_PIN 12	 // Pin 12 / D6 SO=Slave Out (Kalo di arduino Pin 12)
-#define CS_PIN 10	 // Pin 15 / D8 CS=Chip Select (Kalo di arduino Pin 10)
+#define SO_PIN 12  // Pin 12 / D6 SO=Slave Out (Kalo di arduino Pin 12)
+#define CS_PIN 10  // Pin 15 / D8 CS=Chip Select (Kalo di arduino Pin 10)
 
 DS3231 rtc;
 Adafruit_BMP280 bmp;
@@ -227,14 +227,14 @@ void displayTimeAndDate(bool relayCondition, int refreshInterval)
 		display.setFont();
 		display.setTextSize(1);
 		display.print(bmp.readAltitude(1013.25), 0); // baca ketinggian
-		display.print(" MDPL");								// print tulisan MDPL
+		display.print(" MDPL");						 // print tulisan MDPL
 
 		display.setCursor(89, 9 + tinggiDisplay); // setting posisi hari
-		display.print(DayOfWeek(rtc.getDoW()));	// baca hari
+		display.print(DayOfWeek(rtc.getDoW()));	  // baca hari
 
-		display.setCursor(7, 56 + tinggiDisplay);	 // setting posisi suhu mesin
+		display.setCursor(7, 56 + tinggiDisplay);  // setting posisi suhu mesin
 		display.print(thermocouple.readCelsius()); // tampilkan suhu mesin ke OLED
-		display.print("C");								 // print huruf C
+		display.print("C");						   // print huruf C
 
 		display.display(); // tampilkan ke OLED
 	}
