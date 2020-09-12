@@ -26,9 +26,9 @@ unsigned long millisOled;
 
 void setup()
 {
-	secondTicker.attach_ms(100, ISRWatchDog); // Ketika terjadi hang, ISRWatchDog() akan berjalan setiap 0.1 detik (100ms)
-	settingI2cDevices();
 	settingPinAndState();
+	settingI2cDevices();
+	secondTicker.attach_ms(2000, ISRWatchDog); // Ketika terjadi hang, ISRWatchDog() akan berjalan setiap 0.1 detik (100ms)
 }
 
 void loop()
@@ -53,6 +53,8 @@ void settingI2cDevices()
 	display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
 	display.setTextColor(WHITE);
 	display.clearDisplay();
+	display.drawBitmap(0, 0, supraX125Bitmap, 128, 64, WHITE);
+	delay(1300);
 	display.display();
 }
 
