@@ -22,9 +22,9 @@ unsigned long millisOled;
 
 void setup()
 {
-	settingI2cDevices();
-	settingPinAndState();
 	secondTicker.attach_ms(1000, ISRWatchDog); // Ketika terjadi hang, ISRWatchDog() akan berjalan setiap 0.1 detik (100ms)
+	settingPinAndState();
+	settingI2cDevices();
 }
 
 void loop()
@@ -36,7 +36,7 @@ void loop()
 void ISRWatchDog()
 {
 	watchDogCounter++;		  // Ketika terjadi hang, akan terus menambah watchDogCounter
-	if (watchDogCounter == 7) // Jika watchDogCounter sudah mencapai 5
+	if (watchDogCounter == 5) // Jika watchDogCounter sudah mencapai 5
 	{
 		ESP.reset(); // Akan melakukan reset
 	}
@@ -48,10 +48,10 @@ void settingI2cDevices()
 
 	display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
 	display.setTextColor(WHITE);
+
 	display.clearDisplay();
 	display.drawBitmap(0, 0, supraX125Bitmap, 128, 64, WHITE);
 	display.display();
-	delay(1500);
 }
 
 void settingPinAndState()
