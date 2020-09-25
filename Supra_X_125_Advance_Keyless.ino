@@ -8,13 +8,13 @@
 #include "Costum_Images.h"
 
 // WebServer Library
-#include <ESP8266WiFi.h>
-#include <ESPAsyncTCP.h>
-#include <ESP8266WebServer.h>
-#include <ESPAsyncWebServer.h>
-#include <Hash.h>
-#include <FS.h>
-#include "Web_Page.h"
+// #include <ESP8266WiFi.h>
+// #include <ESPAsyncTCP.h>
+// #include <ESP8266WebServer.h>
+// #include <ESPAsyncWebServer.h>
+// #include <Hash.h>
+// #include <FS.h>
+// #include "Web_Page.h"
 
 #define SCK_PIN 14 // Pin D5 SCK=Serial CLock (Kalo di arduino Pin 13)
 #define SO_PIN 12  // Pin D6 SO=Slave Out (Kalo di arduino Pin 12)
@@ -22,8 +22,8 @@
 
 DS3231 rtc;
 Adafruit_BMP280 bmp;
-AsyncWebServer server(80);
-WiFiEventHandler disconnectedEventHandler;
+// AsyncWebServer server(80);
+// WiFiEventHandler disconnectedEventHandler;
 Adafruit_SSD1306 display(128, 64, &Wire, -1);
 MAX6675 thermocouple(SCK_PIN, CS_PIN, SO_PIN);
 
@@ -35,7 +35,7 @@ const uint8_t buzzer = 3;		 //RX
 const uint8_t primaryRelay = 13; //D7
 
 uint8_t counterOled;
-bool stateRelay = true;
+bool stateRelay = false;
 bool checkingSwitchButton, lastSwitchButton, checkingSwitchOled;
 unsigned long timeStart, millisPrintToSerial, millisDeepSleep, millisAutoTurnOff, millisOled;
 
@@ -43,59 +43,59 @@ void setup()
 {
 	// Serial.begin(9600);
 	settingI2cDevices();
-	settingPinAndState();
+	// settingPinAndState();
 	// startWiFiAndServer();
 }
 
 void loop()
 {
-	pressToStartTimer(buttonPin);
-	remoteKeyless(primaryRelay, 350);
-	autoTurnOffRelay(&stateRelay, 10000, 8, getBatteryVoltage());
+	// pressToStartTimer(buttonPin);
+	// remoteKeyless(primaryRelay, 350);
+	// autoTurnOffRelay(&stateRelay, 10000, 8, getBatteryVoltage());
 	switchAndDisplayOledScreen(stateRelay, 200, 70);
 	// printToSerial(30);
 	// deepSleepMode(stateRelay, 5000);
 }
 
-void startWiFiAndServer()
-{
-	WiFi.begin(wifiSSID, wifiPassword);
+// void startWiFiAndServer()
+// {
+// 	WiFi.begin(wifiSSID, wifiPassword);
 
-	disconnectedEventHandler = WiFi.onStationModeDisconnected([](const WiFiEventStationModeDisconnected &event) {
-		Serial.println("Station disconnected, trying to reconnect");
-	});
+// 	disconnectedEventHandler = WiFi.onStationModeDisconnected([](const WiFiEventStationModeDisconnected &event) {
+// 		Serial.println("Station disconnected, trying to reconnect");
+// 	});
 
-	if (!SPIFFS.begin())
-	{
-		Serial.println("An Error has occurred while mounting SPIFFS");
-	}
+// 	if (!SPIFFS.begin())
+// 	{
+// 		Serial.println("An Error has occurred while mounting SPIFFS");
+// 	}
 
-	File file = SPIFFS.open("/index.html", "r");
-	if (!file)
-	{
-		Serial.println("Failed to open file for reading");
-	}
+// 	File file = SPIFFS.open("/index.html", "r");
+// 	if (!file)
+// 	{
+// 		Serial.println("Failed to open file for reading");
+// 	}
 
-	file.close();
+// 	file.close();
 
-	server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
-		request->send(SPIFFS, "/index.html");
-	});
+// 	server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+// 		request->send(SPIFFS, "/index.html");
+// 	});
 
-	server.on("/temperature", HTTP_GET, [](AsyncWebServerRequest *request) {
-		request->send_P(200, "text/plain", String(bmp.readTemperature()).c_str());
-	});
+// 	server.on("/temperature", HTTP_GET, [](AsyncWebServerRequest *request) {
+// 		request->send_P(200, "text/plain", String(bmp.readTemperature()).c_str());
+// 	});
 
-	server.on("/humidity", HTTP_GET, [](AsyncWebServerRequest *request) {
-		request->send_P(200, "text/plain", String(bmp.readAltitude(1013.25)).c_str());
-	});
+// 	server.on("/humidity", HTTP_GET, [](AsyncWebServerRequest *request) {
+// 		request->send_P(200, "text/plain", String(bmp.readAltitude(1013.25)).c_str());
+// 	});
 
-	server.on("/pressure", HTTP_GET, [](AsyncWebServerRequest *request) {
-		request->send_P(200, "text/plain", String(getBatteryVoltage()).c_str());
-	});
+// 	server.on("/pressure", HTTP_GET, [](AsyncWebServerRequest *request) {
+// 		request->send_P(200, "text/plain", String(getBatteryVoltage()).c_str());
+// 	});
 
-	server.begin();
-}
+// 	server.begin();
+// }
 
 void settingI2cDevices()
 {
@@ -511,29 +511,29 @@ void displayTachometer(uint16_t getTachometer)
 	display.display();
 }
 
-void displayWifiConnectifity()
-{
-	display.clearDisplay();
-	display.drawBitmap(1, 9, wifiBitmap, 40, 40, WHITE);
+// void displayWifiConnectifity()
+// {
+// 	display.clearDisplay();
+// 	display.drawBitmap(1, 9, wifiBitmap, 40, 40, WHITE);
 
-	display.setFont(&Cousine_Bold_11);
-	display.setCursor(6, 57);
-	display.print("WiFi");
-	display.setCursor(58, 20);
-	display.print("Status");
+// 	display.setFont(&Cousine_Bold_11);
+// 	display.setCursor(6, 57);
+// 	display.print("WiFi");
+// 	display.setCursor(58, 20);
+// 	display.print("Status");
 
-	display.setCursor(42, 38);
-	display.setFont();
-	display.setTextSize(1);
-	if (WiFi.status() == WL_CONNECTED)
-	{
-		display.print(WiFi.localIP());
-	}
-	else
-	{
-		display.setCursor(48, 34);
-		display.print("Reconnecting");
-	}
+// 	display.setCursor(42, 38);
+// 	display.setFont();
+// 	display.setTextSize(1);
+// 	if (WiFi.status() == WL_CONNECTED)
+// 	{
+// 		display.print(WiFi.localIP());
+// 	}
+// 	else
+// 	{
+// 		display.setCursor(48, 34);
+// 		display.print("Reconnecting");
+// 	}
 
-	display.display();
-}
+// 	display.display();
+// }
