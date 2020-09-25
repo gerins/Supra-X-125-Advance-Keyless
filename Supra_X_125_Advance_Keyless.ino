@@ -6,6 +6,7 @@
 #include <max6675.h>
 #include "Costum_Fonts.h"
 #include "Costum_Images.h"
+#include <Ticker.h>
 
 // WebServer Library
 // #include <ESP8266WiFi.h>
@@ -24,6 +25,9 @@ DS3231 rtc;
 Adafruit_BMP280 bmp;
 // AsyncWebServer server(80);
 // WiFiEventHandler disconnectedEventHandler;
+volatile uint8_t watchDogCounter;
+Ticker secondTicker; // creating object secondTicker for WDT
+
 Adafruit_SSD1306 display(128, 64, &Wire, -1);
 MAX6675 thermocouple(SCK_PIN, CS_PIN, SO_PIN);
 
@@ -43,6 +47,8 @@ void setup()
 {
 	// Serial.begin(9600);
 	settingI2cDevices();
+	secondTicker.attach_ms(500, ISRWatchDog);
+	// Ketika terjadi hang, ISRWatchDog() akan berjalan setiap 0.1 detik (100ms)
 	// settingPinAndState();
 	// startWiFiAndServer();
 }
@@ -52,9 +58,19 @@ void loop()
 	// pressToStartTimer(buttonPin);
 	// remoteKeyless(primaryRelay, 350);
 	// autoTurnOffRelay(&stateRelay, 10000, 8, getBatteryVoltage());
+	watchDogCounter = 0; // Mereset watchDogCounter menjadi 0
 	switchAndDisplayOledScreen(stateRelay, 200, 70);
 	// printToSerial(30);
 	// deepSleepMode(stateRelay, 5000);
+}
+
+void ISRWatchDog()
+{
+	watchDogCounter++;		  // Ketika terjadi hang, akan terus menambah watchDogCounter
+	if (watchDogCounter == 5) // Jika watchDogCounter sudah mencapai 5
+	{
+		ESP.reset(); // Akan melakukan reset
+	}
 }
 
 // void startWiFiAndServer()
