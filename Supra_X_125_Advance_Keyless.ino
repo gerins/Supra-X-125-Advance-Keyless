@@ -4,17 +4,15 @@
 #include <Adafruit_BMP280.h>
 #include <DS3231.h>
 #include <max6675.h>
+#include <Ticker.h>
 #include "Costum_Fonts.h"
 #include "Costum_Images.h"
 
 // WebServer Library
-// #include <ESP8266WiFi.h>
-// #include <ESPAsyncTCP.h>
-// #include <ESP8266WebServer.h>
-// #include <ESPAsyncWebServer.h>
-// #include <Hash.h>
-// #include <FS.h>
-// #include "Web_Page.h"
+#include <ESP8266WiFi.h>
+#include <ESPAsyncTCP.h>
+#include <ESPAsyncWebServer.h>
+#include <ArduinoJson.h>
 
 #define SCK_PIN 14 // Pin D5 SCK=Serial CLock (Kalo di arduino Pin 13)
 #define SO_PIN 12  // Pin D6 SO=Slave Out (Kalo di arduino Pin 12)
@@ -22,13 +20,15 @@
 
 DS3231 rtc;
 Adafruit_BMP280 bmp;
-// AsyncWebServer server(80);
-// WiFiEventHandler disconnectedEventHandler;
+Ticker secondTicker;
+volatile uint8_t watchDogCounter;
+WiFiEventHandler disconnectedEventHandler;
+AsyncWebServer server(80);
 Adafruit_SSD1306 display(128, 64, &Wire, -1);
 MAX6675 thermocouple(SCK_PIN, CS_PIN, SO_PIN);
 
-char *wifiSSID = "Redmiqwery1";
-char *wifiPassword = "kucing123";
+char *wifiSSID = "Redmiqwery1234";
+char *wifiPassword = "kucing1234";
 
 const uint8_t buttonPin = 16; //D0
 const uint8_t buzzer = 3;	  //RX
@@ -42,54 +42,53 @@ void setup()
 	// Serial.begin(9600);
 	settingI2cDevices();
 	settingPinAndState();
-	// startWiFiAndServer();
+	secondTicker.attach_ms(500, ISRWatchDog);
+	startWiFiAndServer();
 }
 
 void loop()
 {
+	watchDogCounter = 0;
 	pressToStartTimer(buttonPin);
 	switchAndDisplayOledScreen(200, 70);
 	// printToSerial(30);
 }
 
+void ISRWatchDog()
+{
+	watchDogCounter++;
+	if (watchDogCounter == 5)
+	{
+		ESP.reset();
+	}
+}
+
 void startWiFiAndServer()
 {
-	// WiFi.begin(wifiSSID, wifiPassword);
+	WiFi.begin(wifiSSID, wifiPassword);
 
-	// disconnectedEventHandler = WiFi.onStationModeDisconnected([](const WiFiEventStationModeDisconnected &event) {
-	// 	Serial.println("Station disconnected, trying to reconnect");
-	// });
+	disconnectedEventHandler = WiFi.onStationModeDisconnected([](const WiFiEventStationModeDisconnected &event) {
+		Serial.println("Station disconnected, trying to reconnect");
+	});
 
-	// if (!SPIFFS.begin())
-	// {
-	// 	Serial.println("An Error has occurred while mounting SPIFFS");
-	// }
+	server.on("/sensor", HTTP_GET, [](AsyncWebServerRequest *request) {
+		request->send_P(200, "application/json", String(encodeDataSensorToJSONFormat()).c_str());
+	});
 
-	// File file = SPIFFS.open("/index.html", "r");
-	// if (!file)
-	// {
-	// 	Serial.println("Failed to open file for reading");
-	// }
+	server.begin();
+}
 
-	// file.close();
+String encodeDataSensorToJSONFormat()
+{
+	const int capacity = JSON_OBJECT_SIZE(10);
+	StaticJsonDocument<capacity> payload;
 
-	// server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
-	// 	request->send(SPIFFS, "/index.html");
-	// });
+	payload["temp"] = bmp.readTemperature();
+	payload["engine"] = thermocouple.readCelsius();
+	payload["altitude"] = bmp.readAltitude(1013.25);
+	payload["battery"] = getBatteryVoltage();
 
-	// server.on("/temperature", HTTP_GET, [](AsyncWebServerRequest *request) {
-	// 	request->send_P(200, "text/plain", String(bmp.readTemperature()).c_str());
-	// });
-
-	// server.on("/humidity", HTTP_GET, [](AsyncWebServerRequest *request) {
-	// 	request->send_P(200, "text/plain", String(bmp.readAltitude(1013.25)).c_str());
-	// });
-
-	// server.on("/pressure", HTTP_GET, [](AsyncWebServerRequest *request) {
-	// 	request->send_P(200, "text/plain", String(getBatteryVoltage()).c_str());
-	// });
-
-	// server.begin();
+	return payload.as<String>();
 }
 
 void settingI2cDevices()
@@ -473,15 +472,15 @@ void displayWifiConnectifity()
 	display.setCursor(42, 38);
 	display.setFont();
 	display.setTextSize(1);
-	// if (WiFi.status() == WL_CONNECTED)
-	// {
-	// 	display.print(WiFi.localIP());
-	// }
-	// else
-	// {
-	// 	display.setCursor(48, 34);
-	// 	display.print("Reconnecting");
-	// }
+	if (WiFi.status() == WL_CONNECTED)
+	{
+		display.print(WiFi.localIP());
+	}
+	else
+	{
+		display.setCursor(48, 34);
+		display.print("Reconnecting");
+	}
 
 	display.display();
 }
